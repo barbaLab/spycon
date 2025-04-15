@@ -147,20 +147,8 @@ class TE_IDTXL(SpikeConnectivityInference):
         nodes = numpy.unique(ids)
         weights = []
         stats = []
-        pairs_already_computed = numpy.empty((0, 2))
-        pairs_to_compute = []
-        for pair in pairs:
-            id1, id2 = pair
-            if not any(numpy.prod(pairs_already_computed == [id2, id1], axis=1)):
-                pairs_to_compute.append(pair)
-                pairs_already_computed = numpy.vstack(
-                    [pairs_already_computed, numpy.array([id1, id2])]
-                )
-                if any(numpy.prod(pairs == [id2, id1], axis=1)):
-                    pairs_already_computed = numpy.vstack(
-                        [pairs_already_computed, numpy.array([id2, id1])]
-                    )
-
+        pairs_to_compute = numpy.unique(numpy.sort(pairs, axis=1), axis=0)
+        
         job_arguments = zip(repeat(times), repeat(ids), pairs_to_compute)
         pool = multiprocessing.Pool(processes=num_cores)
         results = pool.starmap(self._test_connection_pair, job_arguments)
