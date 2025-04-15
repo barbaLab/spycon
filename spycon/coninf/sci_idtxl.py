@@ -148,11 +148,16 @@ class TE_IDTXL(SpikeConnectivityInference):
         weights = []
         stats = []
         pairs_to_compute = numpy.unique(numpy.sort(pairs, axis=1), axis=0)
-        
+
         job_arguments = zip(repeat(times), repeat(ids), pairs_to_compute)
-        pool = multiprocessing.Pool(processes=num_cores)
-        results = pool.starmap(self._test_connection_pair, job_arguments)
-        pool.close()
+        with multiprocessing.Pool(processes=num_cores) as pool:
+            results = list(
+                tqdm(
+                    iterable=pool.imap(self._test_connection_pair_star, job_arguments),
+                    total=len(pairs_to_compute),
+                    desc="Computing connection pairs"
+                )
+            )
 
         for result in results:
             te1, zval1, te2, zval2, pair = result
@@ -274,3 +279,6 @@ class TE_IDTXL(SpikeConnectivityInference):
         # pval2 = numpy.amin([pval_tmp, 1. - pval_tmp])
         zval2 = numpy.abs(te2 - mu_H0) / std_H0
         return te1, zval1, te2, zval2, pair
+
+    def _test_connection_pair_star(self, args):
+        return self._test_connection_pair(*args)
